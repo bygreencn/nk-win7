@@ -4,17 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"grpc_server"
 	"grpc_server/gen"
 
+	"github.com/Mahdi-zarei/sing-box-extra/boxapi"
+	"github.com/Mahdi-zarei/sing-box-extra/boxbox"
+	"github.com/Mahdi-zarei/sing-box-extra/boxmain"
 	"github.com/matsuridayo/libneko/neko_common"
 	"github.com/matsuridayo/libneko/neko_log"
 	"github.com/matsuridayo/libneko/speedtest"
-	"github.com/matsuridayo/sing-box-extra/boxapi"
-	"github.com/matsuridayo/sing-box-extra/boxbox"
-	"github.com/matsuridayo/sing-box-extra/boxmain"
 
 	"log"
 
@@ -45,13 +46,13 @@ func (s *server) Start(ctx context.Context, in *gen.LoadConfigReq) (out *gen.Err
 		return
 	}
 
-	instance, instance_cancel, err = boxmain.Create([]byte(in.CoreConfig))
+	instance, instance_cancel, err = boxmain.Create([]byte(in.CoreConfig), false)
 
 	if instance != nil {
 		// Logger
 		instance.SetLogWritter(neko_log.LogWriter)
 		// V2ray Service
-		if in.StatsOutbounds != nil {
+		if in.StatsOutbounds != nil && !in.DisableStats {
 			instance.Router().SetV2RayServer(boxapi.NewSbV2rayServer(option.V2RayStatsServiceOptions{
 				Enabled:   true,
 				Outbounds: in.StatsOutbounds,
@@ -98,7 +99,7 @@ func (s *server) Test(ctx context.Context, in *gen.TestReq) (out *gen.TestResp, 
 		var cancel context.CancelFunc
 		if in.Config != nil {
 			// Test instance
-			i, cancel, err = boxmain.Create([]byte(in.Config.CoreConfig))
+			i, cancel, err = boxmain.Create([]byte(in.Config.CoreConfig), true)
 			if i != nil {
 				defer i.Close()
 				defer cancel()
@@ -118,7 +119,7 @@ func (s *server) Test(ctx context.Context, in *gen.TestReq) (out *gen.TestResp, 
 	} else if in.Mode == gen.TestMode_TcpPing {
 		out.Ms, err = speedtest.TcpPing(in.Address, in.Timeout)
 	} else if in.Mode == gen.TestMode_FullTest {
-		i, cancel, err := boxmain.Create([]byte(in.Config.CoreConfig))
+		i, cancel, err := boxmain.Create([]byte(in.Config.CoreConfig), true)
 		if i != nil {
 			defer i.Close()
 			defer cancel()
@@ -135,7 +136,7 @@ func (s *server) Test(ctx context.Context, in *gen.TestReq) (out *gen.TestResp, 
 func (s *server) QueryStats(ctx context.Context, in *gen.QueryStatsReq) (out *gen.QueryStatsResp, _ error) {
 	out = &gen.QueryStatsResp{}
 
-	if instance != nil {
+	if instance != nil && instance.Router().V2RayServer() != nil {
 		if ss, ok := instance.Router().V2RayServer().(*boxapi.SbV2rayServer); ok {
 			out.Traffic = ss.QueryStats(fmt.Sprintf("outbound>>>%s>>>traffic>>>%s", in.Tag, in.Direct))
 		}
@@ -149,4 +150,54 @@ func (s *server) ListConnections(ctx context.Context, in *gen.EmptyReq) (*gen.Li
 		// TODO upstream api
 	}
 	return out, nil
+}
+
+func (s *server) GetGeoIPList(ctx context.Context, in *gen.EmptyReq) (*gen.GetGeoIPListResponse, error) {
+	resp, err := boxmain.ListGeoip()
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]string, 0)
+	for _, r := range resp {
+		r += "_IP"
+		res = append(res, r)
+	}
+
+	return &gen.GetGeoIPListResponse{Items: res}, nil
+}
+
+func (s *server) GetGeoSiteList(ctx context.Context, in *gen.EmptyReq) (*gen.GetGeoSiteListResponse, error) {
+	resp, err := boxmain.GeositeList()
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]string, 0)
+	for _, r := range resp {
+		r += "_SITE"
+		res = append(res, r)
+	}
+
+	return &gen.GetGeoSiteListResponse{Items: res}, nil
+}
+
+func (s *server) CompileGeoIPToSrs(ctx context.Context, in *gen.CompileGeoIPToSrsRequest) (*gen.EmptyResp, error) {
+	category := strings.TrimSuffix(in.Item, "_IP")
+	err := boxmain.CompileRuleSet(category, boxmain.IpRuleSet, "./rule_sets/"+in.Item+".srs")
+	if err != nil {
+		return nil, err
+	}
+
+	return &gen.EmptyResp{}, nil
+}
+
+func (s *server) CompileGeoSiteToSrs(ctx context.Context, in *gen.CompileGeoSiteToSrsRequest) (*gen.EmptyResp, error) {
+	category := strings.TrimSuffix(in.Item, "_SITE")
+	err := boxmain.CompileRuleSet(category, boxmain.SiteRuleSet, "./rule_sets/"+in.Item+".srs")
+	if err != nil {
+		return nil, err
+	}
+
+	return &gen.EmptyResp{}, nil
 }

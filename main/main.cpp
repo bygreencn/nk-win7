@@ -13,7 +13,6 @@
 #include "main/NekoGui.hpp"
 
 #include "ui/mainwindow_interface.h"
-#include "ui/dialog_first_setup.h"
 
 #ifdef Q_OS_WIN
 #include "sys/windows/MiniDump.h"
@@ -164,19 +163,13 @@ int main(int argc, char* argv[]) {
     if (coreLoaded.isEmpty()) {
         NekoGui::coreType = -1;
         loadTranslate(QLocale().name());
-        auto dialogFirstSetup = new DialogFirstSetup;
-        dialogFirstSetup->exec();
-        dialogFirstSetup->deleteLater();
-        if (NekoGui::coreType < 0) {
-            return 0;
-        } else {
-            QDir().mkdir("groups");
-            QFile file;
-            file.setFileName("groups/coreType");
-            file.open(QIODevice::ReadWrite | QIODevice::Truncate);
-            file.write(Int2String(NekoGui::coreType).toUtf8());
-            file.close();
-        }
+        NekoGui::coreType = NekoGui::CoreType::SING_BOX;
+        QDir().mkdir("groups");
+        QFile file;
+        file.setFileName("groups/coreType");
+        file.open(QIODevice::ReadWrite | QIODevice::Truncate);
+        file.write(Int2String(NekoGui::coreType).toUtf8());
+        file.close();
     } else {
         NekoGui::coreType = coreLoaded.toInt();
     }
@@ -193,23 +186,16 @@ int main(int argc, char* argv[]) {
     if (!dir.exists(ROUTES_PREFIX_NAME)) {
         dir_success &= dir.mkdir(ROUTES_PREFIX_NAME);
     }
+    if (!dir.exists(RULE_SETS_DIR)) {
+        dir_success &= dir.mkdir(RULE_SETS_DIR);
+    }
     if (!dir_success) {
         QMessageBox::warning(nullptr, "Error", "No permission to write " + dir.absolutePath());
         return 1;
     }
 
     // Load dataStore
-    switch (NekoGui::coreType) {
-        case NekoGui::CoreType::V2RAY:
-            NekoGui::dataStore->fn = "groups/nekoray.json";
-            break;
-        case NekoGui::CoreType::SING_BOX:
-            NekoGui::dataStore->fn = "groups/nekobox.json";
-            break;
-        default:
-            MessageBoxWarning("Error", "Unknown coreType.");
-            return 0;
-    }
+    NekoGui::dataStore->fn = "groups/nekobox.json";
     auto isLoaded = NekoGui::dataStore->Load();
     if (!isLoaded) {
         NekoGui::dataStore->Save();
@@ -220,7 +206,7 @@ int main(int argc, char* argv[]) {
 
     // load routing
     NekoGui::dataStore->routing = std::make_unique<NekoGui::Routing>();
-    NekoGui::dataStore->routing->fn = ROUTES_PREFIX + NekoGui::dataStore->active_routing;
+    NekoGui::dataStore->routing->fn = ROUTES_PREFIX + "Default";
     isLoaded = NekoGui::dataStore->routing->Load();
     if (!isLoaded) {
         NekoGui::dataStore->routing->Save();

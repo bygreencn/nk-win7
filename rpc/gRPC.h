@@ -10,13 +10,13 @@ namespace QtGrpc {
 }
 
 namespace NekoGui_rpc {
+    enum GeoRuleSetType {ip, site};
+
     class Client {
     public:
         explicit Client(std::function<void(const QString &)> onError, const QString &target, const QString &token);
 
         void Exit();
-
-        bool KeepAlive();
 
         // QString returns is error string
 
@@ -26,11 +26,13 @@ namespace NekoGui_rpc {
 
         long long QueryStats(const std::string &tag, const std::string &direct);
 
-        std::string ListConnections();
-
         libcore::TestResp Test(bool *rpcOK, const libcore::TestReq &request);
 
         libcore::UpdateResp Update(bool *rpcOK, const libcore::UpdateReq &request);
+
+        QStringList GetGeoList(bool *rpcOK, GeoRuleSetType mode);
+
+        QString CompileGeoSet(bool *rpcOK, GeoRuleSetType mode, std::string category);
 
     private:
         std::function<std::unique_ptr<QtGrpc::Http2GrpcChannelPrivate>()> make_grpc_channel;

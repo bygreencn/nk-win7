@@ -5,6 +5,7 @@
 
 #include "3rdparty/qv2ray/v2/ui/QvAutoCompleteTextEdit.hpp"
 #include "main/NekoGui.hpp"
+#include "widget/RouteItem.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -23,37 +24,23 @@ public:
 private:
     Ui::DialogManageRoutes *ui;
 
-    struct {
-        QString custom_route;
-        QString custom_route_global;
-    } CACHE;
+    RouteItem* routeChainWidget;
 
-    QMenu *builtInSchemesMenu;
-    Qv2ray::ui::widgets::AutoCompleteTextEdit *directDomainTxt;
-    Qv2ray::ui::widgets::AutoCompleteTextEdit *proxyDomainTxt;
-    Qv2ray::ui::widgets::AutoCompleteTextEdit *blockDomainTxt;
-    //
-    Qv2ray::ui::widgets::AutoCompleteTextEdit *directIPTxt;
-    Qv2ray::ui::widgets::AutoCompleteTextEdit *blockIPTxt;
-    Qv2ray::ui::widgets::AutoCompleteTextEdit *proxyIPTxt;
-    //
-    NekoGui::Routing routing_cn_lan = NekoGui::Routing(1);
-    NekoGui::Routing routing_global = NekoGui::Routing(0);
-    //
-    QString title_base;
-    QString active_routing;
+    void reloadProfileItems();
 
+    QList<std::shared_ptr<NekoGui::RoutingChain>> chainList;
+
+    int currentRouteProfileID = -1;
+
+    QShortcut* deleteShortcut;
 public slots:
-
     void accept() override;
 
-    QList<QAction *> getBuiltInSchemes();
+    void updateCurrentRouteProfile(int idx);
 
-    QAction *schemeToAction(const QString &name, const NekoGui::Routing &scheme);
+    void on_new_route_clicked();
 
-    void UpdateDisplayRouting(NekoGui::Routing *conf, bool qv);
+    void on_edit_route_clicked();
 
-    void SaveDisplayRouting(NekoGui::Routing *conf);
-
-    void on_load_save_clicked();
+    void on_delete_route_clicked();
 };

@@ -4,21 +4,14 @@ namespace NekoGui {
 
     class Routing : public JsonStore {
     public:
-        QString direct_ip;
-        QString direct_domain;
-        QString proxy_ip;
-        QString proxy_domain;
-        QString block_ip;
-        QString block_domain;
+        int current_route_id = 0;
         QString def_outbound = "proxy";
-        QString custom = "{\"rules\": []}";
 
         // DNS
         QString remote_dns = "https://8.8.8.8/dns-query";
         QString remote_dns_strategy = "";
         QString direct_dns = "localhost";
         QString direct_dns_strategy = "";
-        bool dns_routing = true;
         bool use_dns_object = false;
         QString dns_object = "";
         QString dns_final_out = "proxy";
@@ -30,11 +23,7 @@ namespace NekoGui {
 
         explicit Routing(int preset = 0);
 
-        [[nodiscard]] QString DisplayRouting() const;
-
         static QStringList List();
-
-        static bool SetToActive(const QString &name);
     };
 
     class ExtraCore : public JsonStore {
@@ -100,7 +89,7 @@ namespace NekoGui {
         int test_concurrent = 5;
         bool old_share_link_format = true;
         int traffic_loop_interval = 1000;
-        bool connection_statistics = false;
+        bool disable_traffic_stats = false;
         int current_group = 0; // group id
         QString mux_protocol = "";
         bool mux_padding = false;
@@ -147,24 +136,29 @@ namespace NekoGui {
 
         // VPN
         bool fake_dns = false;
-        bool vpn_internal_tun = true;
+        bool enable_gso = false;
         int vpn_implementation = 0;
         int vpn_mtu = 9000;
         bool vpn_ipv6 = false;
         bool vpn_hide_console = true;
         bool vpn_strict_route = false;
-        bool vpn_rule_white = false;
-        QString vpn_rule_process = "";
-        QString vpn_rule_cidr = "";
+
+        // NTP
+        bool enable_ntp = false;
+        QString ntp_server_address = "";
+        int ntp_server_port = 0;
+        QString ntp_interval = "";
 
         // Hotkey
         QString hotkey_mainwindow = "";
         QString hotkey_group = "";
         QString hotkey_route = "";
         QString hotkey_system_proxy_menu = "";
+        QString hotkey_toggle_system_proxy = "";
 
         // Core
         int core_box_clash_api = -9090;
+        QString core_box_clash_listen_addr = "127.0.0.1";
         QString core_box_clash_api_secret = "";
         QString core_box_underlying_dns = "";
         bool core_ray_direct_dns = false;
@@ -180,7 +174,7 @@ namespace NekoGui {
 
         void UpdateStartedId(int id);
 
-        QString GetUserAgent(bool isDefault = false) const;
+        [[nodiscard]] QString GetUserAgent(bool isDefault = false) const;
     };
 
     extern DataStore *dataStore;

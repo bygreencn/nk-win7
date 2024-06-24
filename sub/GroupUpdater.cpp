@@ -35,7 +35,42 @@ namespace NekoGui_sub {
         }
     }
 
-    void RawUpdater::update(const QString &str) {
+    int JsonEndIdx(const QString &str, int begin) {
+        int sz = str.length();
+        int counter = 1;
+        for (int i=begin+1;i<sz;i++) {
+            if (str[i] == '{') counter++;
+            if (str[i] == '}') counter--;
+            if (counter==0) return i;
+        }
+        return -1;
+    }
+
+    QList<QString> Disect(const QString &str) {
+        QList<QString> res = QList<QString>();
+        int idx=0;
+        int sz = str.size();
+        while(idx < sz) {
+            if (str[idx] == '\n') {
+                idx++;
+                continue;
+            }
+            if (str[idx] == '{') {
+                int endIdx = JsonEndIdx(str, idx);
+                if (endIdx == -1) return res;
+                res.append(str.mid(idx, endIdx-idx + 1));
+                idx = endIdx+1;
+                continue;
+            }
+            int nlineIdx = str.indexOf('\n', idx);
+            if (nlineIdx == -1) nlineIdx = sz;
+            res.append(str.mid(idx, nlineIdx-idx));
+            idx = nlineIdx+1;
+        }
+        return res;
+    }
+
+    void RawUpdater::update(const QString &str, bool needParse = true) {
         // Base64 encoded subscription
         if (auto str2 = DecodeB64IfValid(str); !str2.isEmpty()) {
             update(str2);
@@ -49,11 +84,16 @@ namespace NekoGui_sub {
         }
 
         // Multi line
-        if (str.count("\n") > 0) {
-            auto list = str.split("\n");
+        if (str.count("\n") > 0 && needParse) {
+            auto list = Disect(str);
             for (const auto &str2: list) {
-                update(str2.trimmed());
+                update(str2.trimmed(), false);
             }
+            return;
+        }
+
+        // is comment or too short
+        if (str.startsWith("//") || str.startsWith("#") || str.length() < 2) {
             return;
         }
 
@@ -70,6 +110,22 @@ namespace NekoGui_sub {
             auto j = DecodeB64IfValid(link.fragment().toUtf8(), QByteArray::Base64UrlEncoding);
             if (j.isEmpty()) return;
             ent->bean->FromJsonBytes(j);
+        }
+
+        // Json
+        if (str.startsWith('{')) {
+            ent = NekoGui::ProfileManager::NewProxyEntity("custom");
+            auto bean = ent->CustomBean();
+            auto obj = QString2QJsonObject(str);
+            if (obj.contains("outbounds")) {
+                bean->core = "internal-full";
+                bean->config_simple = str;
+            } else if (obj.contains("server")) {
+                bean->core = "internal";
+                bean->config_simple = str;
+            } else {
+                return;
+            }
         }
 
         // SOCKS
@@ -278,7 +334,7 @@ namespace NekoGui_sub {
 
                     // sing-mux
                     auto smux = NodeChild(proxy, {"smux"});
-                    if (Node2Bool(smux["enabled"])) bean->stream->multiplex_status = 1;
+                    if (Node2Bool(smux["enabled"])) bean->mux_state = 1;
                 } else if (type == "socks" || type == "http") {
                     auto bean = ent->SocksHTTPBean();
                     bean->username = Node2QString(proxy["username"]);
@@ -313,7 +369,7 @@ namespace NekoGui_sub {
 
                     // sing-mux
                     auto smux = NodeChild(proxy, {"smux"});
-                    if (Node2Bool(smux["enabled"])) bean->stream->multiplex_status = 1;
+                    if (Node2Bool(smux["enabled"])) bean->mux_state = 1;
 
                     // opts
                     auto ws = NodeChild(proxy, {"ws-opts", "ws-opt"});
@@ -358,7 +414,7 @@ namespace NekoGui_sub {
 
                     // sing-mux
                     auto smux = NodeChild(proxy, {"smux"});
-                    if (Node2Bool(smux["enabled"])) bean->stream->multiplex_status = 1;
+                    if (Node2Bool(smux["enabled"])) bean->mux_state = 1;
 
                     // meta packet encoding
                     if (Node2Bool(proxy["xudp"])) bean->stream->packet_encoding = "xudp";

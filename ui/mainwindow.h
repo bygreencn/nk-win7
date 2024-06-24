@@ -55,13 +55,13 @@ public:
 
     void neko_set_spmode_system_proxy(bool enable, bool save = true);
 
+    void neko_toggle_system_proxy();
+
     void neko_set_spmode_vpn(bool enable, bool save = true);
 
     void show_log_impl(const QString &log);
 
     void start_select_mode(QObject *context, const std::function<void(int)> &callback);
-
-    void refresh_connection_list(const QJsonArray &arr);
 
     void RegisterHotkey(bool unregister);
 
@@ -179,9 +179,7 @@ private:
 
     void HotkeyEvent(const QString &key);
 
-    bool StartVPNProcess();
-
-    // grpc and ...
+    // grpc
 
     static void setup_grpc();
 

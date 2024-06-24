@@ -7,14 +7,14 @@ import (
 
 	"grpc_server"
 
+	"github.com/Mahdi-zarei/sing-box-extra/boxbox"
+	"github.com/Mahdi-zarei/sing-box-extra/boxmain"
+	_ "github.com/Mahdi-zarei/sing-box-extra/distro/all"
 	"github.com/matsuridayo/libneko/neko_common"
-	"github.com/matsuridayo/sing-box-extra/boxbox"
-	"github.com/matsuridayo/sing-box-extra/boxmain"
-	_ "github.com/matsuridayo/sing-box-extra/distro/all"
 )
 
 func main() {
-	fmt.Println("sing-box-extra:", boxbox.Version, "NekoBox:", neko_common.Version_neko)
+	fmt.Println("sing-box:", boxbox.Version)
 	fmt.Println()
 
 	// nekobox_core

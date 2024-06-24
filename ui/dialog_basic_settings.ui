@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>600</width>
-    <height>400</height>
+    <width>728</width>
+    <height>472</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -32,6 +32,12 @@
    </item>
    <item row="2" column="3">
     <widget class="QTabWidget" name="tabWidget">
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>414</height>
+      </size>
+     </property>
      <property name="currentIndex">
       <number>0</number>
      </property>
@@ -629,14 +635,34 @@
               </widget>
              </item>
              <item row="1" column="1">
-              <widget class="QComboBox" name="log_level">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-              </widget>
+              <layout class="QHBoxLayout" name="horizontalLayout_20">
+               <item>
+                <widget class="QComboBox" name="log_level">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="disable_stats">
+                 <property name="minimumSize">
+                  <size>
+                   <width>411</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Might Improve Ping and Performance&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>Disable Traffic Stats</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
              </item>
              <item row="2" column="0">
               <widget class="QLabel" name="label_6">
@@ -690,50 +716,80 @@
         </widget>
        </item>
        <item>
-        <widget class="QGroupBox" name="groupBox3">
-         <property name="title">
-          <string>Switch core</string>
+        <widget class="QGroupBox" name="ntp_box">
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Settings for the sing-box's built-in NTP client&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
-         <layout class="QHBoxLayout" name="horizontalLayout_21">
-          <item>
-           <spacer name="horizontalSpacer">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="switch_core_v2ray">
+         <property name="title">
+          <string>NTP Settings</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_6">
+          <item row="0" column="0">
+           <widget class="QCheckBox" name="ntp_enable">
             <property name="text">
-             <string notr="true">Xray</string>
+             <string>Enable</string>
             </property>
            </widget>
           </item>
-          <item>
-           <widget class="QRadioButton" name="switch_core_sing_box">
-            <property name="text">
-             <string notr="true">sing-box</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <spacer name="horizontalSpacer_2">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
+          <item row="1" column="0">
+           <layout class="QHBoxLayout" name="horizontalLayout_22">
+            <item>
+             <widget class="QLabel" name="ntp_server_l">
+              <property name="text">
+               <string>server</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="ntp_server"/>
+            </item>
+            <item>
+             <widget class="QLabel" name="ntp_port_l">
+              <property name="text">
+               <string>Port</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="ntp_port">
+              <property name="maximumSize">
+               <size>
+                <width>162</width>
+                <height>16777215</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="ntp_interval_l">
+              <property name="text">
+               <string>sync interval</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="ntp_interval">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;In minutes&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+              <item>
+               <property name="text">
+                <string>5m</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>10m</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>30m</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+           </layout>
           </item>
          </layout>
         </widget>
@@ -758,8 +814,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>198</width>
-            <height>58</height>
+            <width>680</width>
+            <height>355</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_6">

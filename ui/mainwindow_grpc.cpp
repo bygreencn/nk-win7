@@ -35,12 +35,9 @@ std::list<std::shared_ptr<NekoGui_sys::ExternalProcess>> CreateExtCFromExtR(cons
 
 // grpc
 
-#ifndef NKR_NO_GRPC
 using namespace NekoGui_rpc;
-#endif
 
 void MainWindow::setup_grpc() {
-#ifndef NKR_NO_GRPC
     // Setup Connection
     defaultClient = new Client(
         [=](const QString &errStr) {
@@ -50,7 +47,6 @@ void MainWindow::setup_grpc() {
 
     // Looper
     runOnNewThread([=] { NekoGui_traffic::trafficLooper->Loop(); });
-#endif
 }
 
 // 测速
@@ -74,7 +70,6 @@ void MainWindow::speedtest_current_group(int mode) {
         return;
     }
 
-#ifndef NKR_NO_GRPC
     if (speedtesting) {
         MessageBoxWarning(software_name, "The last speed test did not exit completely, please wait. If it persists, please restart the program.");
         return;
@@ -239,11 +234,9 @@ void MainWindow::speedtest_current_group(int mode) {
         lock_return.unlock();
         speedtesting = false;
     });
-#endif
 }
 
 void MainWindow::speedtest_current() {
-#ifndef NKR_NO_GRPC
     last_test_time = QTime::currentTime();
     ui->label_running->setText(tr("Testing"));
 
@@ -271,13 +264,10 @@ void MainWindow::speedtest_current() {
             }
         });
     });
-#endif
 }
 
 void MainWindow::stop_core_daemon() {
-#ifndef NKR_NO_GRPC
     NekoGui_rpc::defaultClient->Exit();
-#endif
 }
 
 void MainWindow::neko_start(int _id) {
@@ -304,10 +294,9 @@ void MainWindow::neko_start(int _id) {
     }
 
     auto neko_start_stage2 = [=] {
-#ifndef NKR_NO_GRPC
         libcore::LoadConfigReq req;
         req.set_core_config(QJsonObject2QString(result->coreConfig, true).toStdString());
-        req.set_enable_nekoray_connections(NekoGui::dataStore->connection_statistics);
+        req.set_disable_stats(NekoGui::dataStore->disable_traffic_stats);
         if (NekoGui::dataStore->traffic_loop_interval > 0) {
             req.add_stats_outbounds("proxy");
             req.add_stats_outbounds("bypass");
@@ -326,7 +315,6 @@ void MainWindow::neko_start(int _id) {
         NekoGui_traffic::trafficLooper->items = result->outboundStats;
         NekoGui::dataStore->ignoreConnTag = result->ignoreConnTag;
         NekoGui_traffic::trafficLooper->loop_enabled = true;
-#endif
 
         runOnUiThread(
             [=] {
@@ -421,7 +409,6 @@ void MainWindow::neko_stop(bool crash, bool sem) {
             },
             DS_cores);
 
-#ifndef NKR_NO_GRPC
         NekoGui_traffic::trafficLooper->loop_enabled = false;
         NekoGui_traffic::trafficLooper->loop_mutex.lock();
         if (NekoGui::dataStore->traffic_loop_interval != 0) {
@@ -443,7 +430,6 @@ void MainWindow::neko_stop(bool crash, bool sem) {
                 return false;
             }
         }
-#endif
 
         NekoGui::dataStore->UpdateStartedId(-1919);
         NekoGui::dataStore->need_keep_vpn_off = false;
@@ -487,7 +473,6 @@ void MainWindow::neko_stop(bool crash, bool sem) {
 
 void MainWindow::CheckUpdate() {
     // on new thread...
-#ifndef NKR_NO_GRPC
     bool ok;
     libcore::UpdateReq request;
     request.set_action(libcore::UpdateAction::Check);
@@ -503,7 +488,7 @@ void MainWindow::CheckUpdate() {
         return;
     }
 
-    if (response.release_download_url() == nullptr) {
+    if (response.release_download_url() == nullptr || QString(response.assets_name().c_str()).contains(NKR_VERSION)) {
         runOnUiThread([=] {
             MessageBoxInfo(QObject::tr("Update"), QObject::tr("No update"));
         });
@@ -548,5 +533,4 @@ void MainWindow::CheckUpdate() {
             QDesktopServices::openUrl(QUrl(response.release_url().c_str()));
         }
     });
-#endif
 }

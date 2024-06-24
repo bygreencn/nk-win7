@@ -166,7 +166,6 @@ set(PROJECT_SOURCES
         db/ConfigBuilder.cpp
 
         fmt/AbstractBean.cpp
-        fmt/Bean2CoreObj_ray.cpp
         fmt/Bean2CoreObj_box.cpp
         fmt/Bean2External.cpp
         fmt/Bean2Link.cpp
@@ -241,9 +240,9 @@ set(PROJECT_SOURCES
         ui/dialog_hotkey.h
         ui/dialog_hotkey.ui
 
-        ui/dialog_first_setup.cpp
-        ui/dialog_first_setup.h
-        ui/dialog_first_setup.ui
+
+
+
 
         ui/widget/ProxyItem.cpp
         ui/widget/ProxyItem.h
@@ -251,10 +250,15 @@ set(PROJECT_SOURCES
         ui/widget/GroupItem.cpp
         ui/widget/GroupItem.h
         ui/widget/GroupItem.ui
+        ui/widget/RouteItem.cpp
+        ui/widget/RouteItem.h
+        ui/widget/RouteItem.ui
 
         res/neko.qrc
         res/theme/feiyangqingyun/qss.qrc
         ${QV2RAY_RC}
+        db/RouteEntity.h
+        db/RouteEntity.cpp
 )
 
 # Qt exe

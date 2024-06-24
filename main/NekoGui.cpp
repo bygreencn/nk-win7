@@ -86,15 +86,27 @@ namespace NekoGui_ConfigItem {
                 case itemType::boolean:
                     object.insert(item->name, *(bool *) item->ptr);
                     break;
-                case itemType::stringList:
-                    object.insert(item->name, QList2QJsonArray<QString>(*(QList<QString> *) item->ptr));
+                case itemType::stringList: {
+                    if (QListStr2QJsonArray(*(QList<QString> *) item->ptr).isEmpty()) continue;
+                    object.insert(item->name, QListStr2QJsonArray(*(QList<QString> *) item->ptr));
                     break;
-                case itemType::integerList:
-                    object.insert(item->name, QList2QJsonArray<int>(*(QList<int> *) item->ptr));
+                }
+                case itemType::integerList: {
+                    if (QListInt2QJsonArray(*(QList<int> *) item->ptr).isEmpty()) continue;
+                    object.insert(item->name, QListInt2QJsonArray(*(QList<int> *) item->ptr));
                     break;
+                }
                 case itemType::jsonStore:
                     // _add 时应关联对应 JsonStore 的指针
                     object.insert(item->name, ((JsonStore *) item->ptr)->ToJson());
+                    break;
+                case itemType::jsonStoreList:
+                    QJsonArray jsonArray;
+                    auto arr = *(QList<JsonStore*> *) item->ptr;
+                    for ( JsonStore* obj : arr) {
+                        jsonArray.push_back(obj->ToJson());
+                    }
+                    object.insert(item->name, jsonArray);
                     break;
             }
         }
@@ -259,18 +271,16 @@ namespace NekoGui {
         _add(new configItem("hk_group", &hotkey_group, itemType::string));
         _add(new configItem("hk_route", &hotkey_route, itemType::string));
         _add(new configItem("hk_spmenu", &hotkey_system_proxy_menu, itemType::string));
+        _add(new configItem("hk_toggle", &hotkey_toggle_system_proxy, itemType::string));
         _add(new configItem("fakedns", &fake_dns, itemType::boolean));
         _add(new configItem("active_routing", &active_routing, itemType::string));
         _add(new configItem("mw_size", &mw_size, itemType::string));
-        _add(new configItem("conn_stat", &connection_statistics, itemType::boolean));
+        _add(new configItem("disable_traffic_stats", &disable_traffic_stats, itemType::boolean));
         _add(new configItem("vpn_impl", &vpn_implementation, itemType::integer));
         _add(new configItem("vpn_mtu", &vpn_mtu, itemType::integer));
         _add(new configItem("vpn_ipv6", &vpn_ipv6, itemType::boolean));
         _add(new configItem("vpn_hide_console", &vpn_hide_console, itemType::boolean));
         _add(new configItem("vpn_strict_route", &vpn_strict_route, itemType::boolean));
-        _add(new configItem("vpn_bypass_process", &vpn_rule_process, itemType::string));
-        _add(new configItem("vpn_bypass_cidr", &vpn_rule_cidr, itemType::string));
-        _add(new configItem("vpn_rule_white", &vpn_rule_white, itemType::boolean));
         _add(new configItem("check_include_pre", &check_include_pre, itemType::boolean));
         _add(new configItem("sp_format", &system_proxy_format, itemType::string));
         _add(new configItem("sub_clear", &sub_clear, itemType::boolean));
@@ -283,11 +293,16 @@ namespace NekoGui {
         _add(new configItem("splitter_state", &splitter_state, itemType::string));
         _add(new configItem("utlsFingerprint", &utlsFingerprint, itemType::string));
         _add(new configItem("core_box_clash_api", &core_box_clash_api, itemType::integer));
+        _add(new configItem("core_box_clash_listen_addr", &core_box_clash_listen_addr, itemType::string));
         _add(new configItem("core_box_clash_api_secret", &core_box_clash_api_secret, itemType::string));
         _add(new configItem("core_box_underlying_dns", &core_box_underlying_dns, itemType::string));
         _add(new configItem("core_ray_direct_dns", &core_ray_direct_dns, itemType::boolean));
         _add(new configItem("core_ray_freedom_domainStrategy", &core_ray_freedom_domainStrategy, itemType::string));
-        _add(new configItem("vpn_internal_tun", &vpn_internal_tun, itemType::boolean));
+        _add(new configItem("enable_gso", &enable_gso, itemType::boolean));
+        _add(new configItem("enable_ntp", &enable_ntp, itemType::boolean));
+        _add(new configItem("ntp_server_address", &ntp_server_address, itemType::string));
+        _add(new configItem("ntp_server_port", &ntp_server_port, itemType::integer));
+        _add(new configItem("ntp_interval", &ntp_interval, itemType::string));
 #ifdef Q_OS_WIN
         _add(new configItem("core_ray_windows_disable_auto_interface", &core_ray_windows_disable_auto_interface, itemType::boolean));
 #endif
@@ -322,32 +337,10 @@ namespace NekoGui {
 
     // preset routing
     Routing::Routing(int preset) : JsonStore() {
-        if (preset == 1) {
-            direct_ip =
-                "geoip:cn\n"
-                "geoip:private";
-            direct_domain = "geosite:cn";
-            proxy_ip = "";
-            proxy_domain = "";
-            block_ip = "";
-            block_domain =
-                "geosite:category-ads-all\n"
-                "domain:appcenter.ms\n"
-                "domain:firebase.io\n"
-                "domain:crashlytics.com\n";
-        }
-        if (IS_NEKO_BOX) {
-            if (!Preset::SingBox::DomainStrategy.contains(domain_strategy)) domain_strategy = "";
-            if (!Preset::SingBox::DomainStrategy.contains(outbound_domain_strategy)) outbound_domain_strategy = "";
-        }
-        _add(new configItem("direct_ip", &this->direct_ip, itemType::string));
-        _add(new configItem("direct_domain", &this->direct_domain, itemType::string));
-        _add(new configItem("proxy_ip", &this->proxy_ip, itemType::string));
-        _add(new configItem("proxy_domain", &this->proxy_domain, itemType::string));
-        _add(new configItem("block_ip", &this->block_ip, itemType::string));
-        _add(new configItem("block_domain", &this->block_domain, itemType::string));
-        _add(new configItem("def_outbound", &this->def_outbound, itemType::string));
-        _add(new configItem("custom", &this->custom, itemType::string));
+        if (!Preset::SingBox::DomainStrategy.contains(domain_strategy)) domain_strategy = "";
+        if (!Preset::SingBox::DomainStrategy.contains(outbound_domain_strategy)) outbound_domain_strategy = "";
+        _add(new configItem("current_route_id", &this->current_route_id, itemType::integer));
+        _add(new configItem("default_outbound", &this->def_outbound, itemType::string));
         //
         _add(new configItem("remote_dns", &this->remote_dns, itemType::string));
         _add(new configItem("remote_dns_strategy", &this->remote_dns_strategy, itemType::string));
@@ -355,40 +348,14 @@ namespace NekoGui {
         _add(new configItem("direct_dns_strategy", &this->direct_dns_strategy, itemType::string));
         _add(new configItem("domain_strategy", &this->domain_strategy, itemType::string));
         _add(new configItem("outbound_domain_strategy", &this->outbound_domain_strategy, itemType::string));
-        _add(new configItem("dns_routing", &this->dns_routing, itemType::boolean));
         _add(new configItem("sniffing_mode", &this->sniffing_mode, itemType::integer));
         _add(new configItem("use_dns_object", &this->use_dns_object, itemType::boolean));
         _add(new configItem("dns_object", &this->dns_object, itemType::string));
         _add(new configItem("dns_final_out", &this->dns_final_out, itemType::string));
     }
 
-    QString Routing::DisplayRouting() const {
-        return QString("[Proxy] %1\n[Proxy] %2\n[Direct] %3\n[Direct] %4\n[Block] %5\n[Block] %6\n[Default Outbound] %7\n[DNS] %8")
-            .arg(SplitLinesSkipSharp(proxy_domain).join(","), 10)
-            .arg(SplitLinesSkipSharp(proxy_ip).join(","), 10)
-            .arg(SplitLinesSkipSharp(direct_domain).join(","), 10)
-            .arg(SplitLinesSkipSharp(direct_ip).join(","), 10)
-            .arg(SplitLinesSkipSharp(block_domain).join(","), 10)
-            .arg(SplitLinesSkipSharp(block_ip).join(","), 10)
-            .arg(def_outbound)
-            .arg(use_dns_object ? "DNS Object" : "Simple DNS");
-    }
-
     QStringList Routing::List() {
-        QDir dr(ROUTES_PREFIX);
-        return dr.entryList(QDir::Files);
-    }
-
-    bool Routing::SetToActive(const QString &name) {
-        NekoGui::dataStore->routing = std::make_unique<Routing>();
-        NekoGui::dataStore->routing->load_control_must = true;
-        NekoGui::dataStore->routing->fn = ROUTES_PREFIX + name;
-        auto ok = NekoGui::dataStore->routing->Load();
-        if (ok) {
-            NekoGui::dataStore->active_routing = name;
-            NekoGui::dataStore->Save();
-        }
-        return ok;
+        return {"Default"};
     }
 
     // NO default extra core
